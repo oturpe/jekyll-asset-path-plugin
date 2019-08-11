@@ -99,25 +99,58 @@ module Jekyll
       super
     end
 
+    def parseNextParameter(parameterString)
+      if (parameterString == nil)
+        return nil, ""
+      end
+
+      parameterString.strip!
+
+      if (parameterString.length == 0)
+        return nil, ""
+      end
+
+      if ['"', "'"].include? parameterString[0] 
+        # Quoted or whitespace limited field, possibly followed by more fields
+        next_quote_index = parameterString.index(parameterString[0], 1)
+        nextParameter = parameterString[1 ... next_quote_index]
+        if parameterString.length > next_quote_index
+          remaining = parameterString[(next_quote_index + 1) .. -1]
+        else
+          remaining = ""
+        end
+      else
+        # Unquoted parameter
+        whitespace_index = parameterString.index(' ', 0)
+        if (whitespace_index == nil)
+          nextParameter = parameterString
+          remaining = ""
+        else
+          nextParameter = parameterString[0 ... whitespace_index]
+          remaining = parameterString[(whitespace_index + 1) .. -1]
+        end
+      end
+
+      return nextParameter, remaining
+    end
+
+    def parseParameters(parameterString)
+      parameterString.strip!
+
+      filename, parameterString = parseNextParameter(parameterString)
+      post_id, parameterString = parseNextParameter(parameterString)
+
+      return filename, post_id
+    end
+
     def render(context)
       if @markup.empty?
-        return "Error processing input, expected syntax: {% asset_path filename post_id %}"
+        return "Error processing input, expected syntax: {% asset_path filename [post id] %}"
       end
 
       #render the markup
       parameters = Liquid::Template.parse(@markup).render context
-      parameters.strip!
-
-      if ['"', "'"].include? parameters[0] 
-        # Quoted filename, possibly followed by post id
-        last_quote_index = parameters.rindex(parameters[0])
-        filename = parameters[1 ... last_quote_index]
-        post_id = parameters[(last_quote_index + 1) .. -1].strip
-      else
-        # Unquoted filename, possibly followed by post id
-        filename, post_id = parameters.split(/\s+/)
-      end
-
+      filename, post_id = parseParameters(parameters)
       AssetPathTools.resolve(context, filename, post_id)
     end
   end
