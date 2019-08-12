@@ -48,21 +48,13 @@
 
 module Jekyll
 
-  def self.get_post_path(page_id, posts)
-    #check for Jekyll version
-    if Jekyll::VERSION < '3.0.0'
-      #loop through posts to find match and get slug
-      posts.each do |post|
-        if post.id == page_id
-          return "posts/#{post.slug}"
-        end
-      end
-    else
-      #loop through posts to find match and get slug, method calls for Jekyll 3
-      posts.docs.each do |post|
-        if post.id == page_id
-          return "posts/#{post.data['slug']}"
-        end
+  def self.get_post_path(page_id, collections)
+    #loop through all pages and all collections to find match and get slug
+    collections.each do |collection|
+      doc = collection.docs.find { |doc| doc.id == page_id }
+      if doc != nil
+        slug = Jekyll::VERSION  >= '3.0.0' ? doc.data["slug"] : doc.slug
+        return "#{collection.label}/#{slug}"
       end
     end
 
@@ -70,14 +62,17 @@ module Jekyll
   end
 
   class AssetPathTools
-    def self.resolve(context, filename, post_id=nil)
-      page = context.environments.first["page"]
+    def self.resolve(context, filename, page_id=nil)
+      if page_id == nil or page_id.empty?
+        # current page
+        page = context.environments.first["page"]
+        page_id = page["id"]
+      end
 
-      post_id = page["id"] if post_id == nil or post_id.empty?
-      if post_id
-        #if a post
-        posts = context.registers[:site].posts
-        path = Jekyll.get_post_path(post_id, posts)
+      if page_id
+        # is a post
+        collections = context.registers[:site].collections.map { |collectionFromRegister| collectionFromRegister[1] }
+        path = Jekyll.get_post_path(page_id, collections)
       else
         path = page["url"]
       end
@@ -138,9 +133,9 @@ module Jekyll
       parameterString.strip!
 
       filename, parameterString = parseNextParameter(parameterString)
-      post_id, parameterString = parseNextParameter(parameterString)
+      page_id, parameterString = parseNextParameter(parameterString)
 
-      return filename, post_id
+      return filename, page_id
     end
 
     def render(context)
@@ -150,8 +145,8 @@ module Jekyll
 
       #render the markup
       parameters = Liquid::Template.parse(@markup).render context
-      filename, post_id = parseParameters(parameters)
-      AssetPathTools.resolve(context, filename, post_id)
+      filename, page_id, collection_name = parseParameters(parameters)
+      AssetPathTools.resolve(context, filename, page_id)
     end
   end
 end
