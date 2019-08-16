@@ -64,39 +64,7 @@ module Jekyll
   end
 
   class AssetPathTools
-    def self.resolve(context, filename, page_id=nil)
-      if page_id == nil or page_id.empty?
-        # current page
-        page = context.environments.first["page"]
-        page_id = page["id"]
-      end
-
-      if page_id
-        # is a post
-        collections = context.registers[:site].collections.map { |collectionFromRegister| collectionFromRegister[1] }
-        path = Jekyll.get_post_path(page_id, collections)
-      else
-        path = page["url"]
-      end
-
-      #strip filename
-      path = File.dirname(path) if path =~ /\.\w+$/
-
-      #fix double slashes
-      "#{context.registers[:site].config['baseurl']}/assets/#{path}/#{filename}".gsub(/\/{2,}/, '/')
-    end
-  end
-
-  class AssetPathTag < Liquid::Tag
-    @markup = nil
-
-    def initialize(tag_name, markup, tokens)
-      #strip leading and trailing spaces
-      @markup = markup.strip
-      super
-    end
-
-    def parseNextParameter(parameterString)
+    def self.parseNextParameter(parameterString)
       if (parameterString == nil)
         return nil, ""
       end
@@ -131,13 +99,45 @@ module Jekyll
       return nextParameter, remaining
     end
 
-    def parseParameters(parameterString)
+    def self.parseParameters(parameterString)
       parameterString.strip!
 
       filename, parameterString = parseNextParameter(parameterString)
       page_id, parameterString = parseNextParameter(parameterString)
 
       return filename, page_id
+    end
+
+    def self.resolve(context, filename, page_id=nil)
+      if page_id == nil or page_id.empty?
+        # current page
+        page = context.environments.first["page"]
+        page_id = page["id"]
+      end
+
+      if page_id
+        # is a post
+        collections = context.registers[:site].collections.map { |collectionFromRegister| collectionFromRegister[1] }
+        path = Jekyll.get_post_path(page_id, collections)
+      else
+        path = page["url"]
+      end
+
+      #strip filename
+      path = File.dirname(path) if path =~ /\.\w+$/
+
+      #fix double slashes
+      "#{context.registers[:site].config['baseurl']}/assets/#{path}/#{filename}".gsub(/\/{2,}/, '/')
+    end
+  end
+
+  class AssetPathTag < Liquid::Tag
+    @markup = nil
+
+    def initialize(tag_name, markup, tokens)
+      #strip leading and trailing spaces
+      @markup = markup.strip
+      super
     end
 
     def render(context)
@@ -147,7 +147,7 @@ module Jekyll
 
       #render the markup
       parameters = Liquid::Template.parse(@markup).render context
-      filename, page_id, collection_name = parseParameters(parameters)
+      filename, page_id, collection_name = AssetPathTools.parseParameters(parameters)
       AssetPathTools.resolve(context, filename, page_id)
     end
   end
