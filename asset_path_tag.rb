@@ -147,7 +147,7 @@ module Jekyll
 
       #render the markup
       parameters = Liquid::Template.parse(@markup).render context
-      filename, page_id, collection_name = AssetPathTools.parseParameters(parameters)
+      filename, page_id = AssetPathTools.parseParameters(parameters)
       AssetPathTools.resolve(context, filename, page_id)
     end
   end
