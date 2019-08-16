@@ -14,12 +14,14 @@
 # {% asset_path pirate.mov %} on page page-title
 # {% asset_path document.pdf /2012/05/25/another-post-title %}
 # {% asset_path "document with spaces in name.pdf" /2012/05/25/another-post-title %}
+# {% asset_path image.jpg /my_collection/document_in_collection %}
 #
 # Output:
 # /assets/posts/post-title/kitten.png
 # /assets/page-title/pirate.mov
 # /assets/posts/another-post-title/document.pdf
 # /assets/posts/another-post-title/document with spaces in name.pdf
+# /assets/my_collection/document_in_collection/image.jpg
 #
 # Looping example using a variable for the pathname:
 #
